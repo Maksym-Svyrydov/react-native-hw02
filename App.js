@@ -7,6 +7,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
+import LoginForm from './screens/LoginScreen';
 import RegisterForm from './screens/RegistrationScreen';
 
 export default function App() {
@@ -18,6 +19,7 @@ export default function App() {
           source={require('./img/imgBG.png')}
         >
           <RegisterForm />
+          {/* <LoginForm /> */}
         </ImageBackground>
         <StatusBar style="auto" />
       </View>

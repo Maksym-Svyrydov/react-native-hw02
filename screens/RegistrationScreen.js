@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import {
   StyleSheet,
@@ -11,6 +11,7 @@ import {
   Platform,
   TouchableOpacity,
   Image,
+  Dimensions,
 } from 'react-native';
 
 export default function RegisterForm() {
@@ -18,13 +19,16 @@ export default function RegisterForm() {
     name: '',
     email: '',
     password: '',
+    avatar: null,
   };
-  const defaultAvatar = null;
+
   const [user, setUser] = useState(initialState);
-  const [image, setImage] = useState(null);
   const [isShowKeyboard, setIsShowKeyboard] = useState(false);
+  const [activeInput, setActiveInput] = useState('');
+  const [dimensions, setDimensions] = useState(Dimensions.get('window').width);
+  const [showPassword, useShowPassword] = useState(true);
   const addAvatar = async (e) => {
-    if (!image) {
+    if (!user.avatar) {
       let result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.All,
         allowsEditing: true,
@@ -35,10 +39,10 @@ export default function RegisterForm() {
       console.log(result);
 
       if (!result.canceled) {
-        setImage(result.uri);
+        setUser((prevState) => ({ ...prevState, avatar: result.uri }));
       }
     } else {
-      setImage(null);
+      setUser((prevState) => ({ ...prevState, avatar: null }));
     }
   };
   const submit = (e) => {
@@ -46,30 +50,52 @@ export default function RegisterForm() {
     Keyboard.dismiss();
     console.log(user);
     setUser(initialState);
-    setImage(null);
   };
+  // const width = Dimensions.get('window').width;
+  useEffect(() => {
+    const onChange = () => {
+      const width = Dimensions.get('window').width;
+      setDimensions(width);
+    };
+
+    Dimensions.addEventListener('change', onChange);
+    return () => {
+      Dimensions.addEventListener('change', onChange);
+    };
+  });
+  function togglePassword() {
+    if (user.password.trim() !== '') {
+      if (showPassword) {
+        useShowPassword(false);
+      } else if (!showPassword) {
+        useShowPassword(true);
+      }
+    }
+  }
   const link = '';
   const openLink = () => Linking.openURL(link);
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={{ ...styles.container, flex: isShowKeyboard ? 0.6 : 0.6 }}>
         <View style={styles.innerContainer}>
-          <View style={styles.avatarWrapper}>
+          <View
+            style={{ ...styles.avatarWrapper, left: (dimensions - 120) / 2 }}
+          >
             <TouchableOpacity onPress={addAvatar}>
-              {image && (
+              {user.avatar && (
                 <Image
-                  src={image}
+                  src={user.avatar}
                   style={{ width: 120, height: 120, borderRadius: 16 }}
                 />
               )}
-              {!image && (
+              {!user.avatar && (
                 <Image
                   fadeDuration={0}
                   style={styles.avatarDefault}
                   source={require('../img/addicon.png')}
                 />
               )}
-              {image && (
+              {user.avatar && (
                 <Image
                   fadeDuration={0}
                   style={{ ...styles.removeIcon }}
@@ -86,37 +112,64 @@ export default function RegisterForm() {
           >
             <View style={styles.inputWrapper}>
               <TextInput
+                style={{
+                  ...styles.input,
+                  borderColor: activeInput === 'login' ? '#FF6C00' : '#f6f6f6',
+                }}
+                placeholderTextColor="#BDBDBD"
                 value={user.name}
                 onChangeText={(value) =>
                   setUser((prevState) => ({ ...prevState, name: value }))
                 }
                 placeholder="Логін"
-                style={styles.input}
-                onFocus={() => setIsShowKeyboard(true)}
+                onFocus={() => {
+                  setIsShowKeyboard(true), setActiveInput('login');
+                }}
               />
               <TextInput
+                style={{
+                  ...styles.input,
+                  borderColor: activeInput === 'email' ? '#FF6C00' : '#f6f6f6',
+                }}
+                placeholderTextColor="#BDBDBD"
                 value={user.email}
                 onChangeText={(value) =>
                   setUser((prevState) => ({ ...prevState, email: value }))
                 }
                 placeholder="Адреса електронної пошти"
-                style={styles.input}
-                onFocus={() => setIsShowKeyboard(true)}
+                onFocus={() => {
+                  setIsShowKeyboard(true), setActiveInput('email');
+                }}
               />
-              <TextInput
-                value={user.password}
-                onChangeText={(value) =>
-                  setUser((prevState) => ({ ...prevState, password: value }))
-                }
-                placeholder="Пароль"
-                secureTextEntry={true}
-                style={styles.input}
-                onFocus={() => setIsShowKeyboard(true)}
-              />
+              <View>
+                <TextInput
+                  style={{
+                    ...styles.input,
+                    borderColor:
+                      activeInput === 'password' ? '#FF6C00' : '#f6f6f6',
+                  }}
+                  placeholderTextColor="#BDBDBD"
+                  value={user.password}
+                  onChangeText={(value) =>
+                    setUser((prevState) => ({ ...prevState, password: value }))
+                  }
+                  placeholder="Пароль"
+                  secureTextEntry={showPassword}
+                  onFocus={() => {
+                    setIsShowKeyboard(true), setActiveInput('password');
+                  }}
+                />
+                <Text
+                  style={{ ...styles.showPass, right: 32 }}
+                  onPress={() => togglePassword()}
+                >
+                  Показати
+                </Text>
+              </View>
             </View>
             <TouchableOpacity
               activeOpacity={0.8}
-              style={styles.buttonWrapper}
+              style={{ ...styles.buttonWrapper, width: dimensions - 42 }}
               onPress={submit}
             >
               <Text style={styles.btnText}>Зареєстуватися</Text>
@@ -157,8 +210,6 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     backgroundColor: '#F6F6F6',
-    zIndex: 1,
-    marginHorizontal: 130,
   },
   avatarDefault: {
     position: 'absolute',
@@ -195,11 +246,17 @@ const styles = StyleSheet.create({
 
   input: {
     padding: 10,
-    color: '#BDBDBD',
     marginBottom: 10,
     fontWeight: '400',
     fontSize: 16,
     lineHeight: 19,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingLeft: 16,
+  },
+  showPass: {
+    position: 'absolute',
+    top: 16,
   },
   buttonWrapper: {
     backgroundColor: '#FF6C00',
