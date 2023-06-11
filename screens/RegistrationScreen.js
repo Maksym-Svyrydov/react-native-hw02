@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-
+import * as ImagePicker from 'expo-image-picker';
 import {
   StyleSheet,
   View,
@@ -9,34 +9,75 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   TouchableOpacity,
+  Image,
 } from 'react-native';
-const initialState = {
-  name: '',
-  email: '',
-  password: '',
-};
+
 export default function RegisterForm() {
+  const initialState = {
+    name: '',
+    email: '',
+    password: '',
+  };
+  const defaultAvatar = null;
   const [user, setUser] = useState(initialState);
-
+  const [image, setImage] = useState(null);
   const [isShowKeyboard, setIsShowKeyboard] = useState(false);
+  const addAvatar = async (e) => {
+    if (!image) {
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
 
-  const nameHandler = (text) => setName(text);
-  const emailHandler = (text) => setEmail(text);
-  const passwordHandler = (text) => setPassword(text);
+      console.log(result);
 
+      if (!result.canceled) {
+        setImage(result.uri);
+      }
+    } else {
+      setImage(null);
+    }
+  };
   const submit = (e) => {
     setIsShowKeyboard(false);
     Keyboard.dismiss();
     console.log(user);
     setUser(initialState);
+    setImage(null);
   };
-
+  const link = '';
+  const openLink = () => Linking.openURL(link);
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={{ ...styles.container, flex: isShowKeyboard ? 0.7 : 0.7 }}>
+      <View style={{ ...styles.container, flex: isShowKeyboard ? 0.6 : 0.6 }}>
         <View style={styles.innerContainer}>
+          <View style={styles.avatarWrapper}>
+            <TouchableOpacity onPress={addAvatar}>
+              {image && (
+                <Image
+                  src={image}
+                  style={{ width: 120, height: 120, borderRadius: 16 }}
+                />
+              )}
+              {!image && (
+                <Image
+                  fadeDuration={0}
+                  style={styles.avatarDefault}
+                  source={require('../img/addicon.png')}
+                />
+              )}
+              {image && (
+                <Image
+                  fadeDuration={0}
+                  style={{ ...styles.removeIcon }}
+                  source={require('../img/removeicon.png')}
+                />
+              )}
+            </TouchableOpacity>
+          </View>
           <View style={styles.titleWrapper}>
             <Text style={styles.title}>Реєстрація</Text>
           </View>
@@ -81,9 +122,9 @@ export default function RegisterForm() {
               <Text style={styles.btnText}>Зареєстуватися</Text>
             </TouchableOpacity>
           </KeyboardAvoidingView>
-          <TouchableWithoutFeedback style={styles.linkWrapper}>
+          <TouchableOpacity style={styles.linkWrapper} onPress={openLink}>
             <Text style={styles.link}>Вже є акаунт? Увійти</Text>
-          </TouchableWithoutFeedback>
+          </TouchableOpacity>
         </View>
       </View>
     </TouchableWithoutFeedback>
@@ -92,10 +133,10 @@ export default function RegisterForm() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 0.7,
+    flex: 1,
     position: 'relative',
     justifyContent: 'flex-end',
-    // alignItems: '',
+    // alignItems: 'center',
   },
   innerContainer: {
     backgroundColor: '#fff',
@@ -109,8 +150,35 @@ const styles = StyleSheet.create({
     paddingBottom: 43,
     gap: 16,
   },
+  avatarWrapper: {
+    position: 'absolute',
+    top: -90,
+    borderRadius: 16,
+    width: 120,
+    height: 120,
+    backgroundColor: '#F6F6F6',
+    zIndex: 1,
+    marginHorizontal: 130,
+  },
+  avatarDefault: {
+    position: 'absolute',
+    top: 90,
+    right: -10,
+    width: 25,
+    height: 25,
+    resizeMode: 'cover',
+  },
+  removeIcon: {
+    position: 'absolute',
+    top: 86,
+    right: -17,
+    width: 37,
+    height: 37,
+    resizeMode: 'cover',
+  },
   titleWrapper: {
-    alignItems: 'center',
+    // alignItems: 'center',
+    marginTop: 92,
   },
   title: {
     fontWeight: 500,
@@ -123,7 +191,6 @@ const styles = StyleSheet.create({
   },
   inputWrapper: {
     marginBottom: 42,
-    marginTop: 32,
   },
 
   input: {
