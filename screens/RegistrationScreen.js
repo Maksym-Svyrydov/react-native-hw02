@@ -58,9 +58,9 @@ export default function RegisterForm() {
       setDimensions(width);
     };
 
-    Dimensions.addEventListener('change', onChange);
+    const subscription = Dimensions.addEventListener('change', onChange);
     return () => {
-      Dimensions.addEventListener('change', onChange);
+      return () => subscription?.remove();
     };
   });
   function togglePassword() {
